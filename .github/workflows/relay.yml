@@ -60,7 +60,8 @@ jobs:
     - name: Stage artifacts
       run: |
         mkdir -p staging
-        cp relay-rust/target/${{ matrix.rust_target }}/release/${{ env.BINARY_NAME }} staging/${{ env.BINARY_NAME }}-${{ matrix.arch }}
+        ls $GITHUB_WORKSPACE/relay-rust/target/${{ matrix.rust_target }}/release/
+        cp $GITHUB_WORKSPACE/relay-rust/target/${{ matrix.rust_target }}/release/${{ env.BINARY_NAME }} staging/${{ env.BINARY_NAME }}-${{ matrix.arch }}
         chmod +x staging/${{ env.BINARY_NAME }}-${{ matrix.arch }}
 
     - name: Upload binary artifact
