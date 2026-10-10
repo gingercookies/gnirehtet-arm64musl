@@ -4,7 +4,7 @@ name: Rust relay build
 
 env:
   CARGO_TERM_COLOR: always
-  BINARY_NAME: gnirehtet-relay
+  BINARY_NAME: gnirehtet
 
 on:
   workflow_dispatch: 
