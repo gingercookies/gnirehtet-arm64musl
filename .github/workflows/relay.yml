@@ -1,0 +1,68 @@
+name: Rust relay build
+
+# Reference from: https://gist.github.com/aalkhodiry/299c3df7d36bccc636dba778d5b6e296
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: gnirehtet-relay
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  build:
+    name: Building musl binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            rust_target: aarch64-unknown-linux-musl
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v4
+
+    - name: Install building toolchain & cross compiler
+      run: | 
+        sudo apt-get update
+        sudo apt-get install -y musl-tools musl-dev
+        curl -fsSL https://musl.cc/aarch64-linux-musl-cross.tgz | tar xz -C /opt
+        echo "/opt/aarch64-linux-musl-cross/bin" >> "$GITHUB_PATH"
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: "1.99.0"
+        targets: ${{ matrix.rust_target }}
+
+    - name: Configure cross-compilation linker
+      run: |
+        mkdir -p ~/.cargo
+        printf '[target.aarch64-unknown-linux-musl]\nlinker = "aarch64-linux-musl-gcc"\n' >> ~/.cargo/config.toml
+
+    - name: Cache cargo registry and build artifacts
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ runner.os }}-${{ matrix.rust_target }}-relay-rust-${{ hashFiles('relay-rust**/Cargo.lock', 'Cargo.lock') }}
+        cache-targets: true
+        
+    - name: Build release binary
+      env:
+        CC_aarch64_unknown_linux_musl: ${{ matrix.arch == 'arm64' && 'aarch64-linux-musl-gcc' || '' }}
+        AR_aarch64_unknown_linux_musl: ${{ matrix.arch == 'arm64' && 'aarch64-linux-musl-ar' || '' }}
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: ${{ matrix.arch == 'arm64' && 'aarch64-linux-musl-gcc' || '' }}
+      run: cargo build  --manifest-path relay-rust/Cargo.toml --verbose --release --target ${{ matrix.rust_target }}
+
+
+    - name: Stage artifacts
+      run: |
+        mkdir -p staging
+        cp relay-rust/target/${{ matrix.rust_target }}/release/${{ env.BINARY_NAME }} staging/${{ env.BINARY_NAME }}-${{ matrix.arch }}
+        chmod +x staging/${{ env.BINARY_NAME }}-${{ matrix.arch }}
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: binary-${{ matrix.arch }}
+        path: staging/
+
