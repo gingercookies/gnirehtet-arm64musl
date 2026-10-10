@@ -29,7 +29,7 @@ jobs:
 
     - name: Install cross compiler
       run: |
-        curl -fsSL https://musl.cc/aarch64-linux-musl-cross.tgz | tar xz -C /opt
+        curl -fsSL https://github.com/gingercookies/gnirehtet-arm64musl/releases/download/musl-binary/aarch64-linux-musl-cross.tgz | tar xz -C /opt
         echo "/opt/aarch64-linux-musl-cross/bin" >> "$GITHUB_PATH"
 
     - name: Install Rust
